@@ -29,7 +29,7 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          PRECO_MAX: "1400"
+          PRECO_MAX: "1800"
           TESTE: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
 
       - name: Salvar placas já avisadas
