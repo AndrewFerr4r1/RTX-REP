@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:                  # impede duas execuções ao mesmo tempo
+  group: monitor-rtx
+  cancel-in-progress: false
+
 jobs:
   monitorar:
     runs-on: ubuntu-latest
@@ -33,4 +37,13 @@ jobs:
           git config user.name "monitor-bot"
           git config user.email "monitor-bot@users.noreply.github.com"
           git add vistos.json
-          git diff --cached --quiet || (git commit -m "atualiza vistos" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -m "atualiza vistos"
+          for tentativa in 1 2 3; do
+            if git pull --rebase -X theirs origin main && git push; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Não consegui salvar o vistos.json desta vez (não é grave)."
