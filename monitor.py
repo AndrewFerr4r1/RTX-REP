@@ -12,7 +12,7 @@ from urllib.parse import quote, quote_plus
 import requests
 
 # ---------------- CONFIGURAÇÃO ----------------
-PRECO_MAX = float(os.getenv("PRECO_MAX", "1400"))  # avisa se custar até isso
+PRECO_MAX = float(os.getenv("PRECO_MAX", "1800"))  # avisa se custar até isso
 PRECO_MIN = float(os.getenv("PRECO_MIN", "600"))   # ignora abaixo disso (golpe/acessório)
 TERMOS_BUSCA = ["rtx 3060", "rtx 2060"]
 EXCLUIR = ["notebook", "laptop", "pc gamer", "computador", "desktop", "cooler",
@@ -75,16 +75,24 @@ def buscar_kabum(termo):
 
 
 def buscar_mercadolivre(termo):
-    r = requests.get("https://api.mercadolibre.com/sites/MLB/search",
-                     params={"q": termo, "limit": 50}, headers=HEADERS, timeout=30)
-    r.raise_for_status()
+    pagina = baixar("https://lista.mercadolivre.com.br/" + quote(termo.replace(" ", "-")))
     resultados = []
-    for i in r.json().get("results", []):
-        if not i.get("price"):
+    for bloco in re.split(r'class="(?:poly-card|ui-search-result)[ "]', pagina)[1:]:
+        lk = re.search(r'href="(https://[^"]*mercadolivre\.com\.br/[^"]*)"', bloco)
+        if not lk:
             continue
-        loja = "Mercado Livre" + (" (USADO)" if i.get("condition") == "used" else "")
-        resultados.append({"loja": loja, "nome": i["title"],
-                           "preco": float(i["price"]), "link": i["permalink"]})
+        link = lk.group(1).split("#")[0].split("?")[0]
+        t = re.search(r'<a[^>]*href="[^"]*"[^>]*>([^<]{10,})</a>', bloco) or \
+            re.search(r'title="([^"]{10,})"', bloco)
+        if not t:
+            continue
+        sem_preco_antigo = re.sub(r'<s\b.*?</s>', '', bloco, flags=re.S)
+        p = re.search(r'andes-money-amount__fraction[^>]*>([\d.]+)<', sem_preco_antigo)
+        if not p:
+            continue
+        loja = "Mercado Livre" + (" (USADO)" if "Usado" in bloco else "")
+        resultados.append({"loja": loja, "nome": html_lib.unescape(t.group(1).strip()),
+                           "preco": preco_br(p.group(1) + ",00"), "link": link})
     return resultados
 
 
@@ -200,7 +208,12 @@ def main():
         for nome_loja, func in lojas:
             try:
                 itens = func(termo)
-                print(f"{nome_loja} / {termo}: {len(itens)} itens")
+                validos = [i for i in itens if titulo_ok(i["nome"]) and i["preco"] >= PRECO_MIN]
+                msg = f"{nome_loja} / {termo}: {len(itens)} itens"
+                if validos:
+                    barata = min(validos, key=lambda x: x["preco"])
+                    msg += f" | mais barata: R$ {barata['preco']:.2f} - {barata['nome'][:60]}"
+                print(msg)
             except Exception as e:  # uma loja falhar não derruba as outras
                 print(f"[erro] {nome_loja} / {termo}: {e}")
                 continue
