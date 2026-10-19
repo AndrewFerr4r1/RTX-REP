@@ -14,7 +14,7 @@ import requests
 # ---------------- CONFIGURAÇÃO ----------------
 PRECO_MAX = float(os.getenv("PRECO_MAX", "1800"))  # avisa se custar até isso
 PRECO_MIN = float(os.getenv("PRECO_MIN", "600"))   # ignora abaixo disso (golpe/acessório)
-TERMOS_BUSCA = ["rtx 3060", "rtx 2060"]
+TERMOS_BUSCA = ["rtx 3060", "rtx 2060", "rtx 3050", "rtx 2070", "rtx 2080"]
 EXCLUIR = ["notebook", "laptop", "pc gamer", "computador", "desktop", "cooler",
            "suporte", "cabo", "adesivo", "backplate", "water", "kit", "mini pc"]
 
