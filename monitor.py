@@ -31,7 +31,7 @@ HEADERS = {
 
 def titulo_ok(titulo: str) -> bool:
     t = titulo.lower()
-    if not re.search(r"rtx\s*-?\s*(2060|3060)", t):
+    if not re.search(r"rtx\s*-?\s*(2060|3060|3050|2070|2080|2090)", t):
         return False
     return not any(p in t for p in EXCLUIR)
 
